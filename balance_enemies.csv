@@ -1,0 +1,22 @@
+Stat,BasicEnemy,BomberSkeleton
+# ENEMY tip statlari -> EnemyDataSO asset'leri. A sutunu = EnemyDataSO alan adi.
+# Bilinmeyen / hesaplanan alanlar sessizce atlanir.
+PoolKey,Enemy_Basic,Enemy_Bomber
+MinWave,1,1
+MinPlayerLevel,1,4
+SpawnWeight,1,0.3
+MaxAlive,0,2
+BaseHealth,100,160
+BaseSpeed,3.5,1
+BaseDamage,8,10
+AttackRange,1.5,1.5
+AttackCooldown,1.2,1.2
+HealthScalePerWave,1.07,1.07
+DamageScalePerWave,1.06,1.06
+ScoreValue,10,20
+BaseXP,15,30
+XPScalePerWave,1.05,1.05
+ExplodesOnDeath,0,1
+ExplosionRadius,3,3.5
+ExplosionDamage,25,30
+DeathFreezeDuration,0.7,0.35

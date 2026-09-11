@@ -1,0 +1,15 @@
+key,value
+# GLOBAL denge ayarlari -> BalanceConfig. Tools > Balance > Import ALL from CSV.
+# Satir basi # ise atlanir. Sadece A (key) ve B (value) sutunlari okunur.
+baseXPRequired,140
+xpMultiplier,1.3
+healthIncreasePerLevel,8
+damageIncreasePerLevel,2.5
+baseEnemyCount,3
+countIncrement,1
+maxWaveEnemyCount,15
+spawnRadius,40
+spawnInterval,0.4
+waveCooldown,8
+startupDelay,7
+abilityCDLevelFactor,0.05
