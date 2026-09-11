@@ -54,3 +54,69 @@ crashlytics-build.properties
 # ===== Bu proje =====
 wizardgame/
 *.zip
+
+# ===== 3. parti / lisansli asset paketleri (public repo'da PAYLASILMAZ -
+# Unity Asset Store EULA genelde ham dosyalarin dagitilmasini yasaklar).
+# Sadece KENDI KODUN (Scripts/, Editor/, ScriptableObjects/, Resources/,
+# Material/) paylasiliyor. Tam oynanabilir oyun icin itch.io linkine bak. =====
+/Assets/Art_Prototype_Stylized/
+/Assets/BOXOPHOBIC/
+/Assets/BTM_Assets/
+/Assets/Basic_RPG_Icons/
+/Assets/Eric VFX Studio/
+/Assets/GameInputControllerIconsFree/
+/Assets/Hovl Studio/
+/Assets/Kevin Iglesias/
+/Assets/Layer Lab/
+/Assets/Polytope Studio/
+/Assets/SazenGames/
+/Assets/Shokubutsu Studio/
+/Assets/SimpleNaturePack/
+/Assets/TwoUncleVFX/
+/Assets/VFXPACK_FIRE_WALLCOEUR/
+/Assets/low-poly-materials-pack-1/
+/Assets/Animations/
+/Assets/Music/
+/Assets/Videos/
+/Assets/Prefab/
+/Assets/Scenes/
+/Assets/Settings/
+/Assets/TextMesh Pro/
+/Assets/TutorialInfo/
+/Assets/nav.unity
+/Assets/nav.unity.meta
+/Assets/nav/
+/Assets/Art_Prototype_Stylized.meta
+/Assets/BOXOPHOBIC.meta
+/Assets/BTM_Assets.meta
+/Assets/Basic_RPG_Icons.meta
+/Assets/Eric VFX Studio.meta
+/Assets/GameInputControllerIconsFree.meta
+/Assets/Hovl Studio.meta
+/Assets/Kevin Iglesias.meta
+/Assets/Layer Lab.meta
+/Assets/Polytope Studio.meta
+/Assets/SazenGames.meta
+/Assets/Shokubutsu Studio.meta
+/Assets/SimpleNaturePack.meta
+/Assets/TwoUncleVFX.meta
+/Assets/VFXPACK_FIRE_WALLCOEUR.meta
+/Assets/low-poly-materials-pack-1.meta
+/Assets/Animations.meta
+/Assets/Music.meta
+/Assets/Videos.meta
+/Assets/Prefab.meta
+/Assets/Scenes.meta
+/Assets/Settings.meta
+/Assets/TextMesh Pro.meta
+/Assets/TutorialInfo.meta
+/Assets/nav.meta
+
+# Bassa gelmis tekil dosyalar - 3. parti (Mixamo fbx) / kisisel (whatsapp
+# fotografi, video) / kaynagi belirsiz - paylasilmayacak.
+/Assets/X Bot@Standing 1H Magic Attack 01.fbx
+/Assets/X Bot@Standing 1H Magic Attack 01.fbx.meta
+/Assets/newback.mp4
+/Assets/newback.mp4.meta
+/Assets/WhatsApp Image*.jpeg
+/Assets/WhatsApp Image*.jpeg.meta
