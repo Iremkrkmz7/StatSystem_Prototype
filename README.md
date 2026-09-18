@@ -1,357 +1,357 @@
 # Wizard Survival (StatSystem_Prototype)
 
-Üstten görünümlü, dalga bazlı hayatta kalma (survivor-like) bir Unity oyunu.
-Prosedürel olarak üretilen sonsuz bir dünyada, giderek güçlenen düşman
-dalgalarına karşı hayatta kalırsın; XP toplayıp seviye atlar, her seviyede üç
-yükseltmeden birini seçer, yetenekler kullanır, görev ve başarımları
-tamamlarsın. İlerlemen kalıcı olarak kaydedilir ve sonraki oyun kaldığın
-yerden devam eder.
+[🇬🇧 **English**](README.md) · [🇹🇷 Türkçe](README.tr.md)
+
+A top-down, wave-based survivor-like game built in Unity. You fight to stay
+alive in an endlessly generated world against waves of enemies that keep
+getting stronger. Collect XP to level up, pick one of three upgrades each
+level, use abilities, and complete quests and achievements. Your progress is
+saved permanently, and every new run continues from where you left off.
 
 **Unity 2022.3 · URP · C#**
 
-**▶ Oynanabilir sürüm:** *(itch.io linki buraya eklenecek)*
+**▶ Play it:** *(itch.io link coming here)*
 
 ---
 
-## Bu depo ne içeriyor?
+## What's in this repository?
 
-Bu depo **yalnızca kendi yazdığım kod ve tasarladığım veriyi** içerir.
-Oyunun tam sürümünde kullanılan ücretli/lisanslı Unity Asset Store paketleri
-(3B modeller, VFX, ikon setleri, animasyonlar, müzikler) ve ana sahne dosyası
-**dahil değildir** — bu paketlerin lisansları ham dosyaların yeniden
-dağıtılmasına izin vermiyor.
+This repository contains **only my own code and the data I designed**.
+The licensed Unity Asset Store packages used in the full game (3D models, VFX,
+icon sets, animations, music) and the main scene file are **not included** —
+those licenses do not permit redistributing the raw asset files.
 
-Dolayısıyla depoyu klonlayıp Unity'de açarsan sahne/prefab referansları eksik
-çıkar. **Amaç kodu incelemek**; oynamak için yukarıdaki itch.io linkine bak.
+So cloning this and opening it in Unity will leave scene and prefab references
+missing. **The goal here is to read the code**; to actually play, use the
+itch.io link above.
 
 ---
 
-## Oynanış
+## Gameplay
 
-| Girdi | Aksiyon |
+| Input | Action |
 |---|---|
-| **WASD** | Hareket |
-| **Fare** | Nişan alma (karakter imlece döner) |
-| **Sol tık (basılı)** | Ateş etme |
-| **Q / yetenek tuşları** | Dash, Shield, AoE, Heal |
-| **Ability ikonları** | Tıklayarak da kullanılabilir |
+| **WASD** | Move |
+| **Mouse** | Aim (the character turns toward the cursor) |
+| **Left click (hold)** | Shoot |
+| **Q / ability keys** | Dash, Shield, AoE, Heal |
+| **Ability icons** | Can also be clicked to activate |
 
-**Döngü:** Dalga başlar → düşmanlar spawn olur → öldür, XP ve elmas topla →
-seviye atla, üç yükseltmeden birini seç → dalga biter, kısa mola → bir sonraki
-dalga daha kalabalık ve daha güçlü. Ölünce (ya da menüye çıkınca) en yüksek
-dalga ve seviyen kaydedilir; yeni oyun oradan başlar.
+**The loop:** a wave starts → enemies spawn → kill them, collect XP and
+diamonds → level up and pick one of three upgrades → the wave ends, short
+breather → the next wave is bigger and stronger. When you die (or quit to the
+menu), your best wave and level are saved, and the next run starts from there.
 
 ---
 
-## Sistemler
+## Systems
 
-### Stat sistemi (projenin çekirdeği)
+### Stat system (the core of the project)
 
-Modifier tabanlı, klasik RPG mantığında bir istatistik sistemi — projenin adı
-(`StatSystem_Prototype`) buradan geliyor.
+A modifier-based RPG-style stat system — the project's name
+(`StatSystem_Prototype`) comes from here.
 
-- **`CharacterStat`** — bir istatistiğin taban değeri + üzerine binen modifier
-  listesi. Değer **cache'lenir**, yalnızca liste ya da taban değiştiğinde
-  (`_isDirty`) yeniden hesaplanır.
-- **`StatModifier`** — üç tip: `Flat` (sabit ekleme), `PercentAdd` (yüzdeler
-  toplanır), `PercentMult` (yüzdeler çarpılır). Uygulama sırası `Order` ile
-  garanti altında: önce Flat, sonra PercentAdd, en son PercentMult.
-- **Kaynak takibi (`Source`)** — her modifier kendini ekleyen nesneyi tutar,
-  böylece `RemoveModifiersFromSource(this)` ile o kaynağın tüm etkileri temiz
-  bir şekilde geri alınabilir. Havuzdan tekrar kullanılan düşmanlarda buff
-  birikmesini önleyen mekanizma budur.
+- **`CharacterStat`** — a base value plus a list of modifiers stacked on top.
+  The result is **cached** and only recomputed when the list or the base value
+  changes (`_isDirty`).
+- **`StatModifier`** — three types: `Flat` (additive), `PercentAdd` (percentages
+  are summed), `PercentMult` (percentages are multiplied). Application order is
+  guaranteed via `Order`: Flat first, then PercentAdd, then PercentMult.
+- **Source tracking (`Source`)** — every modifier remembers the object that
+  added it, so `RemoveModifiersFromSource(this)` can cleanly revert everything
+  from that source. This is what prevents buffs from stacking up on pooled
+  enemies that get reused.
 - **`StatType`** — MaxHealth, Speed, Damage, Defense, AttackSpeed, CritChance,
   PickupRadius.
-- **`SCharacterStats`** — bu sistemi taşıyan MonoBehaviour. Hem oyuncuda hem
-  düşmanlarda kullanılır; can, hasar alma/verme, iyileşme, ölüm ve seviye
-  atlama tepkilerini yönetir.
+- **`SCharacterStats`** — the MonoBehaviour that carries this system. Used by
+  both the player and enemies; handles health, taking and dealing damage,
+  healing, death, and level-up reactions.
 
-### XP, seviye ve yükseltme seçimi
+### XP, levels and upgrade picks
 
-- **`XPSystem`** — XP biriktirme, seviye eşiği (`baseXPRequired × xpMultiplier^level`),
-  seviye atlama olayları. `SetLevelSilently()` ile UI'ı tetiklemeden seviye
-  atanabilir (kayıttan devam ederken kullanılır).
-- **`LevelUpUI`** — seviye atlayınca oyun duraklar ve **üç rastgele yükseltme
-  kartı** sunulur (Vampire Survivors tarzı). Seçim için **süre sınırı** vardır;
-  geri sayım çubuğu, sesin süresiyle birebir senkronize çalışır ve dolduğunda
-  sarıdan kırmızıya geçer.
-- **`UpgradeOption`** — yükseltme tanımı (hangi stat, hangi modifier tipi, ne
-  kadar). Seçilen yükseltme kalıcı bir modifier olarak eklenir.
-- Bunun **üzerine** her seviyede otomatik can/hasar artışı da uygulanır
-  (`healthIncreasePerLevel`, `damageIncreasePerLevel`).
+- **`XPSystem`** — XP accumulation, level threshold
+  (`baseXPRequired × xpMultiplier^level`), level-up events.
+  `SetLevelSilently()` sets a level without firing the UI (used when restoring
+  a saved run).
+- **`LevelUpUI`** — on level up the game pauses and offers **three random
+  upgrade cards** (Vampire Survivors style). There's a **time limit** on the
+  choice; the countdown bar is synced exactly to the length of its audio clip
+  and shifts from yellow to red as it drains.
+- **`UpgradeOption`** — an upgrade definition (which stat, which modifier type,
+  how much). The picked upgrade is added as a permanent modifier.
+- **On top of that**, each level also applies an automatic health/damage
+  increase (`healthIncreasePerLevel`, `damageIncreasePerLevel`).
 
-### Düşman sistemi ve dalgalar
+### Enemies and waves
 
-**`EnemyDataSO`** ile her düşman tipi veri olarak tanımlanır:
+Each enemy type is defined as data through **`EnemyDataSO`**:
 
-| Alan | İşlevi |
+| Field | Purpose |
 |---|---|
-| `MinWave` | Bu dalgadan önce hiç çıkmaz |
-| `MinPlayerLevel` | Oyuncu bu seviyeye gelmeden çıkmaz (MinWave'den bağımsız, ikisi de sağlanmalı) |
-| `SpawnWeight` | Ağırlıklı rastgele seçim — nadir tipler için düşük değer |
-| `MaxAlive` | Aynı anda sahnede bu tipten en fazla kaç tane olabilir |
-| `BaseHealth/Speed/Damage/AttackRange/AttackCooldown` | Temel savaş statları |
-| `HealthScalePerWave`, `DamageScalePerWave` | Dalga başına üstel güçlenme |
-| `BaseXP`, `XPScalePerWave`, `ScoreValue` | Ödüller |
-| `ExplodesOnDeath` + yarıçap/hasar/VFX | Bomber tipi düşmanlar için ölüm patlaması |
+| `MinWave` | Never spawns before this wave |
+| `MinPlayerLevel` | Never spawns before the player reaches this level (independent of MinWave — both must pass) |
+| `SpawnWeight` | Weighted random selection — low values for rare types |
+| `MaxAlive` | How many of this type may be alive at once |
+| `BaseHealth/Speed/Damage/AttackRange/AttackCooldown` | Core combat stats |
+| `HealthScalePerWave`, `DamageScalePerWave` | Exponential scaling per wave |
+| `BaseXP`, `XPScalePerWave`, `ScoreValue` | Rewards |
+| `ExplodesOnDeath` + radius/damage/VFX | Death explosion for bomber-type enemies |
 
-**`EnemySpawner`** dalga akışını yönetir: dalga başına düşman sayısı
-(`baseEnemyCount + countIncrement × dalga`, `maxWaveEnemyCount` ile sınırlı),
-uygunluk filtresi (MinWave / MinPlayerLevel / MaxAlive), ağırlıklı tip seçimi
-ve spawn konumu üretimi.
+**`EnemySpawner`** drives the wave flow: enemy count per wave
+(`baseEnemyCount + countIncrement × wave`, capped by `maxWaveEnemyCount`),
+the eligibility filter (MinWave / MinPlayerLevel / MaxAlive), weighted type
+selection, and spawn position generation.
 
-**Spawn dağılımı** — düşmanların tek bir noktada yığılmaması için:
-altın açı (137.5°) ile dönen bir açı imleci, ±25° sapma, `spawnRadius`'un
-%85–115'i arası mesafe, son 20 spawn noktasına minimum uzaklık kontrolü ve
-NavMesh'e oturtma. Hiçbir aday geçerli çıkmazsa açısal olarak dağıtılmış ham
-bir konuma düşülür.
+**Spawn distribution** — to stop enemies from piling up in one spot: a rotating
+angle cursor using the golden angle (137.5°), ±25° jitter, a distance between
+85–115% of `spawnRadius`, a minimum-separation check against the last 20 spawn
+points, and a NavMesh snap. If no candidate is valid, it falls back to a raw
+but angularly spread position.
 
-### Düşman yapay zekâsı
+### Enemy AI
 
-**`EnemyAI`** — NavMesh tabanlı takip ve saldırı, üzerine birkaç katman
-dayanıklılık:
+**`EnemyAI`** — NavMesh-based chasing and attacking, with several layers of
+resilience on top:
 
-- **Takılma tespiti** — hedefe olan mesafe `StuckSeconds` boyunca anlamlı
-  şekilde azalmıyorsa düşman "takılmış" sayılır.
-- **Doğrudan hareket yedeği** — takıldığında NavMesh bırakılıp hedefe doğrudan
-  ilerlenir; her adımda zemin yüksekliği `NavMesh.SamplePosition` ile
-  örneklenerek Y düzeltilir (aksi halde düşmanlar zemine gömülüp yalnızca
-  gölgeleri görünüyordu).
-- **Havuzdan dönüşte yeniden bağlanma** — `NavMeshAgent.Warp()` ile agent'ın
-  navmesh'e gerçekten oturması garanti edilir.
-- **Kalabalık davranışı** — her düşmana rastgele `avoidancePriority` (30–70)
-  verilir; hepsi aynı öncelikte olduğunda Unity'nin kalabalık simülasyonu
-  birbirlerine yol vermiyor ve düşmanlar iç içe geçiyordu.
-- **Görünürlük** — tüm `SkinnedMeshRenderer`'larda `updateWhenOffscreen = true`;
-  ani konum değişiminden sonra bayatlayan render sınırları yüzünden düşmanlar
-  görünmez hâlde saldırabiliyordu.
+- **Stuck detection** — if the distance to the target hasn't meaningfully
+  decreased for `StuckSeconds`, the enemy is considered stuck.
+- **Direct-move fallback** — when stuck, it leaves the NavMesh and moves
+  straight at the target, sampling `NavMesh.SamplePosition` each step to correct
+  its Y against the ground (without this, enemies sank into the terrain and only
+  their shadows were visible).
+- **Rebinding after pool reuse** — `NavMeshAgent.Warp()` guarantees the agent
+  actually lands on the navmesh.
+- **Crowd behaviour** — each enemy gets a random `avoidancePriority` (30–70);
+  with everyone at the same priority Unity's crowd simulation never yields and
+  enemies clipped through each other.
+- **Visibility** — `updateWhenOffscreen = true` on every `SkinnedMeshRenderer`;
+  stale render bounds after a sudden position change let enemies attack while
+  being culled and therefore invisible.
 
-### Prosedürel dünya
+### Procedural world
 
-- **`ChunkManager`** — oyuncunun etrafında sonsuz chunk yükleme/boşaltma
-  (`renderDistance`, `chunkSize`), seed tabanlı deterministik üretim, kare
-  başına iş sınırı (`maxOpsPerFrame`) ile takılmasız yükleme.
-- **`WorldChunk`** — her chunk kendi proplarını ve zemin dekorlarını yerleştirir.
-  El ile konumlandırılmış spawn noktaları, chunk boyutu değiştiğinde
-  `referenceChunkSize`'a göre orantılı ölçeklenir; spawn noktası tanımlı
-  değilse yoğunluk tabanlı rastgele yerleştirmeye düşer.
-- **Çalışma zamanı NavMesh** — dünya dinamik üretildiği için NavMesh de
-  çalışma zamanında asenkron olarak pişirilir; oyunun ilk saniyelerinde
-  kademeli yeniden bake'ler yapılır.
+- **`ChunkManager`** — endless chunk loading/unloading around the player
+  (`renderDistance`, `chunkSize`), seed-based deterministic generation, and a
+  per-frame work budget (`maxOpsPerFrame`) so streaming never hitches.
+- **`WorldChunk`** — each chunk places its own props and ground decorations.
+  Hand-placed spawn points scale proportionally against `referenceChunkSize`
+  when the chunk size changes; with no spawn points defined it falls back to
+  density-based random placement.
+- **Runtime NavMesh** — since the world is generated dynamically, the NavMesh is
+  baked asynchronously at runtime, with staged re-bakes during the first
+  seconds of play.
 
-### Nesne havuzu (Object pooling)
+### Object pooling
 
-**`PoolManager`** — mermiler, düşmanlar, efektler ve chunk'lar için anahtar
-bazlı havuzlama. `IPoolable` arayüzü ile nesneler havuza dönerken kendilerini
-sıfırlar. Havuz sahne yeniden yüklemelerinde yaşar (`DontDestroyOnLoad`);
-`AutoReturnToPool` ile süreli efektler kendiliğinden geri döner.
+**`PoolManager`** — key-based pooling for projectiles, enemies, effects and
+chunks. The `IPoolable` interface lets objects reset themselves on the way back
+in. The pool survives scene reloads (`DontDestroyOnLoad`), and
+`AutoReturnToPool` returns timed effects on its own.
 
-### Yetenekler
+### Abilities
 
-**`AbilitySO`** ile veri olarak tanımlanır: tip (**Dash / Shield / AoE / Heal**),
-aktivasyon tuşu, bekleme süresi, etki değeri ve süresi, VFX prefab'ı.
-**`AbilityController`** bekleme sürelerini yönetir; bekleme süresi oyuncu
-seviyesiyle birlikte kısalır (`Cooldown / (1 + abilityCDLevelFactor × level)`).
-**`AbilitySlotUI`** her slotu, bekleme süresince dolan bir maske animasyonuyla
-gösterir.
+Defined as data via **`AbilitySO`**: type (**Dash / Shield / AoE / Heal**),
+activation key, cooldown, effect value and duration, VFX prefab.
+**`AbilityController`** manages cooldowns, which shrink as the player levels up
+(`Cooldown / (1 + abilityCDLevelFactor × level)`). **`AbilitySlotUI`** renders
+each slot with a fill animation that drains over the cooldown.
 
-### Silah ve mermiler
+### Weapons and projectiles
 
-**`WeaponSO`** (hasar, atış hızı, mermi prefab'ı) + **`WeaponHandler`** (atış
-zamanlaması — oyuncunun `AttackSpeed` statı atış aralığını böler) +
-**`Projectile`** (havuzlanmış mermi, çarpma tespiti, `HitEffect`).
+**`WeaponSO`** (damage, fire rate, projectile prefab) + **`WeaponHandler`**
+(fire timing — the player's `AttackSpeed` stat divides the interval) +
+**`Projectile`** (pooled projectile, hit detection, `HitEffect`).
 
-### Envanter, eşyalar ve elmaslar
+### Inventory, items and diamonds
 
-**`ItemSO`** tipleri: HealthPack, WeaponPart, ArmorPart, BuffItem, Collectible,
-Diamond, AoEItem. **`ItemPickup`** yerdeki eşyaları, **`InventorySystem`**
-toplama ve kullanma mantığını yönetir. Elmaslar iki ayrı sayaçta tutulur:
-tur içi sayaç (tur sonu ekranı ve rekor için) ve **kalıcı toplam** (toplandığı
-anda kaydedilir, oyun kapansa bile kaybolmaz).
+**`ItemSO`** types: HealthPack, WeaponPart, ArmorPart, BuffItem, Collectible,
+Diamond, AoEItem. **`ItemPickup`** handles world pickups and
+**`InventorySystem`** the collection/use logic. Diamonds live in two separate
+counters: a per-run count (for the end screen and the record) and a
+**persistent total** that is saved the moment one is picked up, so it survives
+even if the game is closed mid-run.
 
-### Görevler ve başarımlar
+### Quests and achievements
 
-- **`QuestSO` / `QuestManager`** — beş görev tipi: `KillEnemies`,
+- **`QuestSO` / `QuestManager`** — five quest types: `KillEnemies`,
   `CollectDiamonds`, `SurviveSeconds`, `KillWithoutDamage`, `MultiKill`.
-  İlerleme olay tabanlı takip edilir, tamamlanınca XP ve elmas ödülü verilir.
-- **`AchievementSO` / `AchievementManager`** — başarımlar kalıcı olarak
-  kaydedilir; yeni oyunda daha önce açılanlar sessizce geri yüklenir
-  (bildirim tekrar gösterilmez), yeni açılanlar bildirim paneliyle duyurulur.
+  Progress is tracked through events; completion grants XP and diamonds.
+- **`AchievementSO` / `AchievementManager`** — achievements persist; on a new
+  run previously unlocked ones are restored silently (no repeated popup), while
+  newly unlocked ones announce themselves through a notification panel.
 
-### Kayıt sistemi ve "kaldığın yerden devam"
+### Save system and "continue where you left off"
 
-**`SaveSystem`** (PlayerPrefs tabanlı) şunları kalıcı tutar: en yüksek dalga,
-en yüksek oyuncu seviyesi, en yüksek kill/elmas rekoru, biriken toplam elmas,
-açılan başarımlar, "nasıl oynanır" ekranının gösterilip gösterilmediği.
+**`SaveSystem`** (PlayerPrefs-based) persists: best wave, best player level,
+best kill/diamond records, accumulated total diamonds, unlocked achievements,
+and whether the how-to-play screen has been shown.
 
-**Önemli tasarım kararı:** en yüksek dalga ile en yüksek oyuncu seviyesi
-**bağımsız** olarak saklanır. Dalga sayısı hayatta kalmayla, seviye ise XP ile
-ilerler ve ikisi aynı hızda gitmez — seviyeyi dalgadan türetmek "11. seviyede
-öldüm, 14'te başladım" gibi tutarsızlıklara yol açıyordu.
+**A key design decision:** best wave and best player level are stored
+**independently**. Waves advance by surviving, levels by earning XP, and the two
+do not move at the same rate — deriving the level from the wave produced
+inconsistencies like *"I died at level 11 and restarted at 14."*
 
-Yeni bir tur başlarken kayıtlı dalga ve seviye geri yüklenir; aradaki seviye
-farkının getireceği can/hasar artışı **tek seferde, sessizce** uygulanır
-(`ApplyCatchUpLevels`) — seviye atlama ekranı arka arkaya açılmaz.
+When a new run begins, the saved wave and level are restored, and the
+health/damage growth those missing levels would have granted is applied
+**silently, in one step** (`ApplyCatchUpLevels`) — no cascade of level-up
+screens.
 
-Kayıt hem ölünce hem de **ölmeden menüye çıkınca** yapılır: sistem bir "oturum
-kaydı" değil rekor kaydı olduğu için (değerler yalnızca yükselir), ulaşılan
-dalgayı kaydetmemek hatalı bir davranış gibi hissettiriyordu.
+Progress is saved both on death **and when quitting to the menu while still
+alive**: this is a record system rather than a session save (values only ever go
+up), so not recording a wave you genuinely reached felt like a bug.
 
-### Giriş sinematiği
+### Intro cinematic
 
-**`PlayerIntroDrop`** — karakterin gökten düşüşü, kamera kuş bakışı açılış,
-yörünge (orbit) hareketi ve oyun içi kameraya yumuşak geçiş. İniş tozu, ses,
-kamera sarsıntısı eşlik eder. Restart'ta sinematik atlanır ama karakterin
-zemine oturması yine maskelenir. Kontrol tam olarak oyuncuya geçtiği an
-"nasıl oynanır" paneli gösterilir (ömür boyu yalnızca bir kez) ve düşman
-spawn sayacı ancak o panel kapandıktan sonra başlar.
+**`PlayerIntroDrop`** — the character falls from the sky, the camera opens on a
+bird's-eye framing, orbits, then eases into the in-game camera. Landing dust,
+sound and camera shake accompany it. On restart the cinematic is skipped, but
+the character settling onto the ground is still masked. The moment control
+actually returns to the player, the how-to-play panel appears (once per
+lifetime), and the enemy spawn timer only starts after that panel closes.
 
-### Arayüz
+### User interface
 
-`HUDController` (can, XP, dalga, kill sayacı) · `HealthBar` (dünya uzayında
-düşman can barları) · `DamageVignette` (darbe alınca kırmızı flaş + düşük canda
-kalıcı kenar vurgusu) · `MultiKillUI` (Double/Triple/Quadra/Penta Kill
-banner'ı + bonus XP) · `FloatingText` (hasar, XP, iyileşme yazıları) ·
-`QuestUI` · `InventoryUI` · `AchievementNotificationUI` · `LevelUpUI` ·
-`PauseUI` · `GameOverUI` · `SettingsUI` (ses ayarları, PlayerPrefs ile kalıcı) ·
+`HUDController` (health, XP, wave, kill counter) · `HealthBar` (world-space
+enemy health bars) · `DamageVignette` (red flash on hit plus a persistent edge
+effect at low health) · `MultiKillUI` (Double/Triple/Quadra/Penta Kill banner
+plus bonus XP) · `FloatingText` (damage, XP, heal numbers) · `QuestUI` ·
+`InventoryUI` · `AchievementNotificationUI` · `LevelUpUI` · `PauseUI` ·
+`GameOverUI` · `SettingsUI` (audio settings, persisted via PlayerPrefs) ·
 `LoadingUI` / `StartMenuUI` · `HowToPlayOverlay` · `GameTimer` ·
-`GlobalButtonSfx` (tüm butonlara otomatik tık sesi).
+`GlobalButtonSfx` (automatic click sound on every button).
 
-### Oyun hissi (game feel)
+### Game feel
 
-`CameraShake` (sönümlenen sarsıntı) · `HitStop` (vuruş anında kısa zaman
-yavaşlatma) · `EnemyFlash` (hasar alınca beyaz flaş) · `EnemyShake` ·
-`DeathExplosion` (bomber ölümünde alan hasarı + VFX) ·
-`GroundFireDamageZone` (patlama sonrası yerde kalan hasar alanı) ·
-`PlayerLevelUpEffect` · `TwinkleEffect`.
+`CameraShake` (damped shake) · `HitStop` (brief time slowdown on impact) ·
+`EnemyFlash` (white flash on damage) · `EnemyShake` · `DeathExplosion` (area
+damage plus VFX when a bomber dies) · `GroundFireDamageZone` (lingering damage
+area after an explosion) · `PlayerLevelUpEffect` · `TwinkleEffect`.
 
-### Olay sistemi
+### Event system
 
-`GameEvent` / `TypedGameEvent` / `GameEventListener` — ScriptableObject
-tabanlı, gevşek bağlı olay kanalları. Sistemler birbirini doğrudan referans
-almadan haberleşir (örn. düşman ölümünü görev, başarım ve multi-kill
-sistemlerinin hepsi dinler).
+`GameEvent` / `TypedGameEvent` / `GameEventListener` — ScriptableObject-based,
+loosely coupled event channels. Systems communicate without referencing each
+other directly (an enemy death, for instance, is heard by the quest, achievement
+and multi-kill systems alike).
 
 ---
 
-## Veri odaklı denge (balance) hattı
+## Data-driven balance pipeline
 
-Denge değerleri koda gömülü değil; Excel'den oyuna akan bir hat üzerinden
-yönetiliyor:
+Balance values aren't hardcoded; they flow from a spreadsheet into the game:
 
 ```
 GameBalance.xlsx   →   balance_global.csv    →   BalanceConfig.asset
-   (elle düzenle)       balance_enemies.csv       EnemyDataSO asset'leri
-                          (CSV olarak kaydet)    (Unity menüsünden import)
+   (edit by hand)       balance_enemies.csv       EnemyDataSO assets
+                         (save as CSV)          (import from Unity menu)
 ```
 
-- **`GameBalance.xlsx`** — 8 sayfalık çalışma kitabı: Config, XP & Levels,
-  Player Progression, Enemies, Waves, Abilities, Economy & Meta, Balance
-  Issues. Formüllerle seviye/dalga eğrilerini önden görebiliyorsun.
-- **`BalanceConfig`** — `Resources` altında tek bir ScriptableObject; XP eğrisi,
-  seviye başına can/hasar artışı, dalga boyutları, spawn yarıçapı/aralığı,
-  dalga molası, yetenek bekleme çarpanı gibi tüm global ayarların **tek
-  doğruluk kaynağı**. `EnemySpawner`, `XPSystem`, `SCharacterStats` ve
-  `AbilityController` değerleri buradan okur.
-- **`BalanceImporter`** (Editor) — `Tools ▸ Balance` menüsü:
+- **`GameBalance.xlsx`** — an 8-sheet workbook: Config, XP & Levels, Player
+  Progression, Enemies, Waves, Abilities, Economy & Meta, Balance Issues.
+  Formulas let you see the level and wave curves before touching the game.
+- **`BalanceConfig`** — a single ScriptableObject under `Resources`; the
+  **single source of truth** for the XP curve, per-level health/damage growth,
+  wave sizes, spawn radius and interval, wave cooldown, ability cooldown factor
+  and more. `EnemySpawner`, `XPSystem`, `SCharacterStats` and
+  `AbilityController` all read from it.
+- **`BalanceImporter`** (Editor) — a `Tools ▸ Balance` menu:
   `Import ALL from CSV`, `Import Global only`, `Import Enemies only`,
-  `Export CURRENT values to CSV`. Reflection ile alanları isimlerine göre
-  eşleyip yazar, bilinmeyen alanları sessizce atlar.
+  `Export CURRENT values to CSV`. It matches fields by name via reflection and
+  silently skips anything it doesn't recognise.
 
-Sonuç: dengeyi değiştirmek için kod değiştirmek ya da Inspector'da tek tek
-alan aramak gerekmiyor — tabloyu düzenle, CSV kaydet, menüden import et.
+The result: changing balance requires no code edits and no hunting through the
+Inspector — edit the sheet, save as CSV, import from the menu.
 
 ---
 
-## Depo yapısı
+## Repository layout
 
 ```
 Assets/
   Scripts/
     Core/
-      Ability/       Yetenek tanımları ve kontrolcüsü
-      Achievement/   Başarım sistemi
-      Events/        ScriptableObject tabanlı olay kanalları
-      Inventory/     Eşya, toplama, envanter
-      Pool/          Nesne havuzu
-      Quest/         Görev sistemi
-      Stats/         Stat/modifier çekirdeği (projenin kalbi)
+      Ability/       Ability definitions and controller
+      Achievement/   Achievement system
+      Events/        ScriptableObject-based event channels
+      Inventory/     Items, pickups, inventory
+      Pool/          Object pooling
+      Quest/         Quest system
+      Stats/         Stat/modifier core (the heart of the project)
       BalanceConfig.cs, SaveSystem.cs, XPSystem.cs, GameFlow.cs, Sfx.cs
-    Enemy/           Düşman AI, spawner, veri, ölüm efektleri
-    Player/          Kontrol, savaş, kamera, giriş sinematiği
-    Weapon/          Silah, mermi, vuruş efekti
-    World/           Chunk tabanlı prosedürel dünya
-    UI/              Tüm arayüz ve oyun hissi katmanı
+    Enemy/           Enemy AI, spawner, data, death effects
+    Player/          Control, combat, camera, intro cinematic
+    Weapon/          Weapons, projectiles, hit effects
+    World/           Chunk-based procedural world
+    UI/              All interface and game-feel layers
   Editor/
-    BalanceImporter.cs   Excel/CSV → oyun verisi import aracı
-  ScriptableObjects/     Düşman, yetenek, görev, eşya, başarım tanımları
+    BalanceImporter.cs   Excel/CSV → game data import tool
+  ScriptableObjects/     Enemy, ability, quest, item, achievement definitions
   Resources/
-    BalanceConfig.asset  Merkezi denge ayarları
+    BalanceConfig.asset  Central balance settings
 GameBalance.xlsx
 balance_global.csv, balance_enemies.csv
 ```
 
 ---
 
-## Yol boyunca çözülen kayda değer teknik sorunlar
+## Notable problems solved along the way
 
-Bu bölüm, geliştirme sırasında karşılaşılan ve teşhisi kolay olmayan
-problemleri belgeliyor:
+This section documents the bugs that were genuinely hard to diagnose:
 
-- **NavMesh çalışma zamanında sessizce çalışmıyordu.**
-  `NavMeshSurface.UpdateNavMesh()` geometriyi `NavMeshData` nesnesine pişirir
-  ama onu çalışma zamanı navigasyon sistemine **kaydetmez**. `OnEnable()`
-  içindeki otomatik `AddData()` çağrısı, o anda `navMeshData` henüz `null`
-  olduğu için hiçbir şey kaydetmiyordu. Sonuç: hata vermeyen, ama tamamen
-  işlevsiz bir navmesh — düşmanlar hareket etmiyordu. Çözüm: her bake sonrası
-  açıkça `RemoveData()` + `AddData()`.
+- **The NavMesh silently did nothing at runtime.**
+  `NavMeshSurface.UpdateNavMesh()` bakes geometry into a `NavMeshData` object
+  but does **not** register it with the runtime navigation system. The automatic
+  `AddData()` call inside `OnEnable()` registered nothing, because `navMeshData`
+  was still `null` at that point. The result was a navmesh that threw no errors
+  and was completely inert — enemies simply never moved. Fix: explicitly call
+  `RemoveData()` + `AddData()` after every bake.
 
-- **Sahne yeniden yüklemesinde havuz bozuluyordu.**
-  Havuza dönen nesneler kalıcı havuz nesnesinin altına geri taşınmadığı için,
-  sahneyle birlikte yok ediliyor ve havuz ölü referanslar tutuyordu. Sonraki
-  `Get()` çağrısı `MissingReferenceException` atıp chunk üretim döngüsünü
-  ortasında kesiyordu — dünyada delikler oluşuyordu.
+- **The pool broke on scene reload.**
+  Returned objects weren't reparented back under the persistent pool object, so
+  they were destroyed along with the scene while the pool kept dead references.
+  The next `Get()` threw a `MissingReferenceException` and aborted the chunk
+  spawn loop midway, leaving holes in the world.
 
-- **Görünmez ama saldıran düşmanlar.**
-  Ani konum değişiminden (Warp/teleport) sonra `SkinnedMeshRenderer`'ın
-  önbellekteki render sınırları bayatlıyor, Unity'nin görüş alanı elemesi mesh'i
-  çizmeyi atlıyordu; fizik ve AI çalışmaya devam ettiği için düşman görünmeden
-  saldırabiliyordu.
+- **Invisible enemies that still attacked.**
+  After a sudden position change (Warp/teleport), the `SkinnedMeshRenderer`'s
+  cached render bounds went stale and Unity's frustum culling skipped drawing
+  the mesh — while physics and AI kept running, so an unseen enemy could still
+  land hits.
 
-- **Sonsuz kamera sarsıntısı.** Sarsıntı döngüsünde sayaç hiç artırılmıyordu
-  (`while (elapsed < duration)` içinde `elapsed` sabitti). Hata, düşmanlar
-  gerçekten vurmaya başlayana kadar görünür olmadı.
+- **Infinite camera shake.** The shake loop never advanced its counter
+  (`elapsed` stayed constant inside `while (elapsed < duration)`). The bug stayed
+  invisible until enemies could actually land a hit.
 
-- **Coroutine'lerde değişken çakışması.** `yield return` içeren metotlar durum
-  makinesi sınıfına derlendiği için, birbiriyle hiç kesişmeyen bloklardaki
-  aynı isimli yerel değişkenler bile `CS0136` hatası veriyor.
+- **Variable collisions in coroutines.** Methods containing `yield return`
+  compile into a state-machine class, so identically named locals in completely
+  separate blocks still raise `CS0136`.
 
-- **"Beyaz ekran" gizemi.** Unity, texture'ı boş bir `RawImage`'ı şeffaf değil
-  **opak beyaz** olarak çizer. Tam ekran olan bu boş katman, altındaki menü
-  arka planını tamamen örtüyordu.
+- **The "white screen" mystery.** Unity draws a `RawImage` with no texture as
+  **opaque white**, not as transparent. That empty full-screen layer was
+  covering the menu background underneath it.
 
-- **WebGL'de video oynatılamaz.** Unity'nin `VideoPlayer` bileşeni WebGL
-  derlemelerinde desteklenmiyor; Editor'de çalışıp build'de siyah kalıyordu.
-  Menü arka planı her platformda tutarlı olsun diye statik görsele çevrildi.
+- **Video can't play in WebGL.** Unity's `VideoPlayer` component isn't supported
+  in WebGL builds; it worked in the Editor and went black in the build. The menu
+  background was switched to a static image so it behaves identically everywhere.
 
-- **Çözünürlük uyuşmazlığı.** Arayüz "Constant Pixel Size" ile mutlak piksel
-  koordinatlarında yerleştirildiği için, tasarım çözünürlüğünden farklı bir
-  build çözünürlüğünde elemanlar ekran dışına taşıyordu.
-
----
-
-## Derleme (WebGL)
-
-- Hedef çözünürlük **1920×1080**
-- **Decompression Fallback** açık (sunucu doğru header göndermediğinde
-  tarayıcı tarafında açılabilmesi için)
-- WebGL içeriği `file://` üzerinden çalışmaz; yerel bir HTTP sunucusu ya da
-  gerçek bir barındırma (itch.io) gerekir
+- **Resolution mismatch.** Because the UI is laid out in absolute pixels
+  ("Constant Pixel Size"), elements spilled off-screen whenever the build
+  resolution differed from the resolution the layout was designed against.
 
 ---
 
-## Lisans
+## Building (WebGL)
 
-Kendi kod ve verim **MIT** lisanslı — bkz. [LICENSE](LICENSE).
-Üçüncü parti Unity Asset Store içerikleri bu depoya dahil değildir ve kendi
-lisanslarına tabidir.
+- Target resolution **1920×1080**
+- **Decompression Fallback** enabled (so the browser can decompress when the
+  server doesn't send the right headers)
+- WebGL content cannot run over `file://`; it needs a local HTTP server or real
+  hosting (itch.io)
+
+---
+
+## License
+
+My own code and data are **MIT** licensed — see [LICENSE](LICENSE).
+Third-party Unity Asset Store content is not included in this repository and
+remains subject to its own licenses.
