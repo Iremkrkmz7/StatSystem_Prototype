@@ -10,7 +10,7 @@ saved permanently, and every new run continues from where you left off.
 
 **Unity 2022.3 · URP · C#**
 
-**▶ Play it:** *(itch.io link coming here)*
+**▶ Play it:** *[(itch.io link coming here)*](https://7iremkrkmz.itch.io/magic-survival)
 
 ---
 
