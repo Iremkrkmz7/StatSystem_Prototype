@@ -16,4 +16,10 @@ public static class GameFlow
     // ile (Editor test-skip dahil ilk giriste) oynayip RESTART'ta
     // TEKRARLANMAMASI icin bunu okuyup hemen sifirlar.
     public static bool IsRestart;
+
+    // "Main Menu" butonu icin - sahne yeniden yuklenirken Loading ekranini
+    // (sahte ilerleme cubugu + ipucu, ~2sn) ATLAYIP dogrudan Start Menu'yu
+    // acar. Oyuncu zaten oyunun icindeydi, tekrar "yukleniyor" gostermek
+    // gereksiz bir bekleme.
+    public static bool SkipLoadingToMenu;
 }

@@ -59,6 +59,17 @@ public class LoadingUI : MonoBehaviour
         Time.timeScale = 0f;
         if (uiRoot != null) uiRoot.SetActive(false);
 
+        // "Main Menu" ile gelindiyse Loading ekranini hic gostermeden dogrudan
+        // Start Menu'yu ac - oyuncu zaten oyunun icindeydi, tekrar ~2sn sahte
+        // "yukleniyor" beklemesi gereksiz.
+        if (GameFlow.SkipLoadingToMenu)
+        {
+            GameFlow.SkipLoadingToMenu = false;
+            if (startMenuPanel != null) startMenuPanel.SetActive(true);
+            if (loadingPanel != null) loadingPanel.SetActive(false);
+            return;
+        }
+
         if (loadingPanel != null) loadingPanel.SetActive(true);
         if (startMenuPanel != null) startMenuPanel.SetActive(false);
         if (progressSlider != null) progressSlider.value = 0f;
@@ -84,7 +95,12 @@ public class LoadingUI : MonoBehaviour
             yield return null;
         }
 
-        if (loadingPanel != null) loadingPanel.SetActive(false);
+        // ONEMLI: ONCE startMenuPanel'i acip SONRA loadingPanel'i kapatiyoruz
+        // (ters sira degil) - aksi halde arada (ikisi de aktif olmadigi) TEK
+        // KARELIK bir bosluk oluyor, o karede hicbir UI paneli ekrani kaplamadigi
+        // icin arkadaki gercek 3D oyun sahnesi (kamera/karakter) bir an gorunup
+        // kayboluyordu ("start'a basmadan once kisa bir an oyun ekrani gorunuyor" sikayeti).
         if (startMenuPanel != null) startMenuPanel.SetActive(true);
+        if (loadingPanel != null) loadingPanel.SetActive(false);
     }
 }

@@ -22,7 +22,7 @@ public class DamageVignette : MonoBehaviour
     [Header("Dusuk Can")]
     [Tooltip("Can bu oranin ALTINA inince kalici vignette baslar (0.5 = %50)")]
     [Range(0f, 1f)] [SerializeField] float lowHealthThreshold = 0.5f;
-    [Range(0f, 1f)] [SerializeField] float lowHealthMaxAlpha = 0.85f;
+    [Range(0f, 1f)] [SerializeField] float lowHealthMaxAlpha = 0.6f;
 
     float _flashTimer;
     float _prevHealth = -1f;

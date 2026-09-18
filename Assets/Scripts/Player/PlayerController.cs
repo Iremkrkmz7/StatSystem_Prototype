@@ -33,6 +33,11 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         if (_stats.IsDead) return;
+        // Hareket, Time.deltaTime ile carpildigi icin pause'da (timeScale=0)
+        // zaten kendiliginden duruyordu, ama HandleRotation transform.rotation'i
+        // DOGRUDAN atadigi icin (deltaTime'a bagli degil) pause'dayken bile
+        // fareyle yon degistirmeye devam ediyordu - bu kontrol onu da durduruyor.
+        if (Time.timeScale <= 0f) return;
         HandleMovement();
         HandleRotation();
     }

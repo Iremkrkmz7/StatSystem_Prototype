@@ -86,6 +86,7 @@ public class PlayerIntroDrop : MonoBehaviour
     [SerializeField] HowToPlayOverlay howToPlayOverlay;
 
     PlayerController _controller;
+    PlayerCombat _combat;
     CharacterController _cc;
     AudioSource _audioSource;
     Animator _animator;
@@ -100,6 +101,13 @@ public class PlayerIntroDrop : MonoBehaviour
     // varsayilan (false) zaten dogru davranisi verir.
     public static bool IntroFallInProgress;
 
+    // Kontrol GERCEKTEN oyuncuya gecip (sinematik bitip) - eger gosterildiyse -
+    // How To Play paneli de KAPANANA kadar false kalir. EnemySpawner startupDelay
+    // sayacini bu true olana kadar HIC baslatmiyor - yoksa sinematik+panel toplam
+    // suresi startupDelay'den uzun surdugunde dusmanlar panel arkasinda/kapanmadan
+    // once spawn olup oyuncuya ulasiyordu (panel kapanir kapanmaz aniden olum).
+    public static bool ControlReturned;
+
     void Awake()
     {
         // GameOverUI.Restart() BUNU true yapiyor - sadece GERCEK "Start"ta
@@ -110,6 +118,7 @@ public class PlayerIntroDrop : MonoBehaviour
         // bayraklari okuyup sifirlamadan biz burada guvenle yakaliyoruz.
         _skipIntro = GameFlow.IsRestart;
         GameFlow.IsRestart = false;
+        ControlReturned = false;
         // RESTART'ta (_skipIntro=true) da karakter Y=4'ten gercek zemine
         // (~0.1) dogal gravity ile duser (asagidaki skip-branch'teki settle-wait) -
         // bu SIRADA da (asil sinematik dususteki gibi) player.position.y
@@ -120,6 +129,7 @@ public class PlayerIntroDrop : MonoBehaviour
         IntroFallInProgress = true;
 
         _controller = GetComponent<PlayerController>();
+        _combat = GetComponent<PlayerCombat>();
         _cc = GetComponent<CharacterController>();
         _audioSource = GetComponent<AudioSource>();
         _animator = GetComponentInChildren<Animator>();
@@ -169,6 +179,10 @@ public class PlayerIntroDrop : MonoBehaviour
             // dususe sebep oluyordu. Simdi (kontrolu KAPATMADAN, PlayerController
             // kendi gravity'siyle) yere oturana kadar HUD'u acmiyoruz/ekrani
             // karartiyoruz - oturunca aninda/gorunmeden acip gosteriyoruz.
+            // Ates etme (PlayerCombat) ayri bir bilesen - hareket/gravity'ye
+            // dokunmadan bu KISA yere-oturma penceresinde onu kapatiyoruz, yoksa
+            // ekran hala karartilmisken oyuncu ates edebiliyordu.
+            if (_combat != null) _combat.enabled = false;
             if (standingPopMaskImage != null)
             {
                 Color c = standingPopMaskImage.color;
@@ -198,6 +212,10 @@ public class PlayerIntroDrop : MonoBehaviour
 
             if (standingPopMaskImage != null)
                 yield return StartCoroutine(FadeImage(standingPopMaskImage, 1f, 0f, 0.3f));
+
+            // Restart'ta How To Play hic gosterilmiyor - kontrol aninda geri gecti.
+            ControlReturned = true;
+            if (_combat != null) _combat.enabled = true;
 
             yield break;
         }
@@ -250,6 +268,7 @@ public class PlayerIntroDrop : MonoBehaviour
         }
 
         if (_controller != null) _controller.enabled = false;
+        if (_combat != null) _combat.enabled = false;
         _cc.enabled = false;
 
         // HUD (XP bar, kill sayaci, gorevler, can barı, ability slotlari vs.)
@@ -490,11 +509,17 @@ public class PlayerIntroDrop : MonoBehaviour
         if (playerHealthBarCanvas != null) playerHealthBarCanvas.SetActive(true);
         _cc.enabled = true;
         if (_controller != null) _controller.enabled = true;
+        if (_combat != null) _combat.enabled = true;
 
         // Kontrol TAM bu anda oyuncuya geciyor - "nasil oynanir" ipucunu
         // (SADECE ilk gercek Start'ta, restart'ta degil - buraya zaten
         // restart _skipIntro dalindan hic girmiyor) simdi gosterelim.
-        howToPlayOverlay?.Show();
+        // ControlReturned, panel varsa KAPANDIKTAN sonra, yoksa (daha once
+        // zaten gosterilmisse) ANINDA true olur - EnemySpawner buna gore bekliyor.
+        if (howToPlayOverlay != null)
+            howToPlayOverlay.Show(() => ControlReturned = true);
+        else
+            ControlReturned = true;
     }
 
     // Klibin TAMAMI (bastan sona) calsin diye dogrudan AudioSource.clip/Play

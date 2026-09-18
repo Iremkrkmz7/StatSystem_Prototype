@@ -52,7 +52,11 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 
 # ===== Bu proje =====
+# WebGL build ciktilari - depoya girmez (her build'de yeniden uretilir,
+# onlarca MB, ayrica 3. parti asset'lerin derlenmis hallerini icerir).
 wizardgame/
+WSgame/
+newwebgl/
 *.zip
 
 # ===== 3. parti / lisansli asset paketleri (public repo'da PAYLASILMAZ -

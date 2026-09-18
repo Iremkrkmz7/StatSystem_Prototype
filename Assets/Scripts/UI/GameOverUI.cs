@@ -147,12 +147,14 @@ public class GameOverUI : MonoBehaviour
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
-    // MAIN MENU butonuna baglanacak - sahneyi yeniden yukler, normal
-    // Loading->Start Menu akisina girer (RESTART'tan farkli olarak
-    // GameFlow.SkipToGameplay set edilmez).
+    // MAIN MENU butonuna baglanacak - sahneyi yeniden yukleyip Start ekranini
+    // acar (RESTART'tan farkli olarak SkipToGameplay set edilmez, yani oyuna
+    // degil menuye doner). Loading ekrani ATLANIR - oyuncu zaten oyunun
+    // icindeydi, tekrar sahte bir "yukleniyor" beklemesi gereksiz.
     public void GoToMainMenu()
     {
         Time.timeScale = 1f;
+        GameFlow.SkipLoadingToMenu = true;
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 }

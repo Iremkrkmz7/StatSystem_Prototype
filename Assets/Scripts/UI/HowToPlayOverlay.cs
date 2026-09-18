@@ -15,22 +15,27 @@ public class HowToPlayOverlay : MonoBehaviour
 
     Coroutine _routine;
 
-    public void Show()
+    public void Show(System.Action onDone = null)
     {
         // OMUR BOYU SADECE 1 KEZ - daha once gosterildiyse hic acilmaz.
-        if (SaveSystem.HowToPlayShown) return;
+        if (SaveSystem.HowToPlayShown)
+        {
+            onDone?.Invoke();
+            return;
+        }
         SaveSystem.MarkHowToPlayShown();
 
         gameObject.SetActive(true);
         if (_routine != null) StopCoroutine(_routine);
-        _routine = StartCoroutine(ShowRoutine());
+        _routine = StartCoroutine(ShowRoutine(onDone));
     }
 
-    IEnumerator ShowRoutine()
+    IEnumerator ShowRoutine(System.Action onDone)
     {
         if (canvasGroup == null)
         {
             gameObject.SetActive(false);
+            onDone?.Invoke();
             yield break;
         }
 
@@ -56,5 +61,6 @@ public class HowToPlayOverlay : MonoBehaviour
         }
         canvasGroup.alpha = 0f;
         gameObject.SetActive(false);
+        onDone?.Invoke();
     }
 }

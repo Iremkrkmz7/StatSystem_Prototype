@@ -98,6 +98,20 @@ public class EnemySpawner : MonoBehaviour
     // yaricapi + retry + fallback ile bunu tolere ediyor.
     yield return new WaitUntil(() => Time.timeScale > 0f);
 
+    // Sinematik giris + (ilk Start'ta) How To Play paneli TAMAMEN bitene kadar
+    // bekle - yoksa bunlarin toplam suresi startupDelay'den uzun surdugunde
+    // dusmanlar panel/sinematik arkasinda spawn olup oyuncuya ulasiyor, panel
+    // kapanir kapanmaz aniden hasar/olum oluyordu. Guvenlik icin max 20sn -
+    // ControlReturned herhangi bir sebeple hic true olmazsa bile dusmanlar
+    // SONSUZA kadar spawn olmadan kalmasin.
+    float controlWait = 0f;
+    const float maxControlWait = 20f;
+    while (!PlayerIntroDrop.ControlReturned && controlWait < maxControlWait)
+    {
+        yield return null;
+        controlWait += Time.unscaledDeltaTime;
+    }
+
     float waited = 0f;
     while (waited < startupDelay)
     {

@@ -114,10 +114,20 @@ public class SCharacterStats : MonoBehaviour
     public void Heal(float amount, bool showFloatingText = true)
     {
         if(_isDead) return;
+        float before = _currentHealth;
         _currentHealth = Mathf.Min(GetStat(StatType.MaxHealth), _currentHealth + amount);
+        // GERCEKTEN iyilesen miktar - can zaten doluyken (ya da tavana cok yakinken)
+        // istenen miktarin tamami uygulanmiyor. Eskiden yazi her durumda "+30"
+        // diyordu, hic iyilesme olmasa bile - yaniltiyordu.
+        float healed = _currentHealth - before;
         if (showFloatingText)
         {
-            FloatingTextSpawner.Instance?.Show(transform.position + Vector3.up * 2f, $"+{amount:0}", Color.green, transform);
+            bool didHeal = healed > 0.01f;
+            FloatingTextSpawner.Instance?.Show(
+                transform.position + Vector3.up * 2f,
+                didHeal ? $"+{healed:0}" : "FULL HP",
+                didHeal ? Color.green : Color.white,
+                transform);
             // showFloatingText false ise (level atlarken tam can doldurma gibi) bu
             // zaten kendi sesine (levelUpSound) sahip, ustune binmesin diye burada calmiyoruz.
             Sfx.PlayAt(healSound, transform.position, healSoundVolume);

@@ -32,11 +32,35 @@ public class PauseUI : MonoBehaviour
         Time.timeScale = 1f;
     }
 
-    // Istersen "Ana Menu" butonuna baglarsin - sahneyi yeniden yukleyip
-    // Loading/Start ekranina geri doner.
+    // "Ana Menu" butonuna baglanir - sahneyi yeniden yukleyip Start ekranina
+    // doner. Loading ekrani ATLANIR (SkipLoadingToMenu): oyuncu zaten oyunun
+    // icindeydi, tekrar sahte bir "yukleniyor" ekraninda beklemesi gereksiz.
     public void RestartScene()
     {
+        SaveRunProgress();
         Time.timeScale = 1f;
+        GameFlow.SkipLoadingToMenu = true;
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    // Oyuncu OLMEDEN menuye ciktiginda da ilerlemeyi kaydeder - kayit sistemi
+    // bir "oturum kaydi" degil REKOR kaydi (sadece en yuksek dalga/seviye
+    // tutulur, deger asla dusmez). Dalga 20'ye gercekten ulasildiysa, olerek
+    // mi yoksa menuye cikarak mi birakildigi o basariyi degistirmez; kaydetmemek
+    // "dalga 20'ye ciktim ama menude 15 yaziyor" gibi bug hissi veriyordu.
+    // (Game Over yolunda ayni kayit zaten GameOverUI.ShowGameOver icinde yapiliyor.)
+    void SaveRunProgress()
+    {
+        int level = XPSystem.Instance != null ? XPSystem.Instance.CurrentLevel : 1;
+        int wave = EnemySpawner.Instance != null ? EnemySpawner.Instance.CurrentWave : 0;
+
+        var hud = FindFirstObjectByType<HUDController>();
+        int kills = hud != null ? hud.KillCount : 0;
+
+        var inventory = FindFirstObjectByType<InventorySystem>();
+        int diamonds = inventory != null ? inventory.Diamonds : 0;
+
+        SaveSystem.SaveRunResult(wave, kills, diamonds);
+        SaveSystem.SetBestPlayerLevel(level);
     }
 }
