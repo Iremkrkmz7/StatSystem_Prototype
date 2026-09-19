@@ -23,6 +23,8 @@ public class EnemyDataSO : ScriptableObject
     public float BaseDamage =8f;
     public float AttackRange =1.8f;
     public float AttackCooldown =1.2f;
+    [Tooltip("Saldiri animasyonu basladiktan kac saniye sonra hasar + vurus sesi uygulanir - yani silahin hedefe DEGDIGI an. Animasyona gore ayarla: ses savurustan once geliyorsa artir, sonra geliyorsa azalt.")]
+    public float AttackImpactDelay = 0.35f;
 
     public float HealthScalePerWave = 1.12f;
     public float DamageScalePerWave = 1.06f;

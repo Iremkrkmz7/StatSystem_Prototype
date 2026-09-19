@@ -57,7 +57,13 @@ crashlytics-build.properties
 wizardgame/
 WSgame/
 newwebgl/
+wz2/
+ws4/
+webgl-build/
 *.zip
+
+# Yerel gelistirme araci ayarlari (onizleme sunucusu vb.)
+.claude/
 
 # ===== 3. parti / lisansli asset paketleri (public repo'da PAYLASILMAZ -
 # Unity Asset Store EULA genelde ham dosyalarin dagitilmasini yasaklar).

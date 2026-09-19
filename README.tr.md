@@ -340,6 +340,41 @@ problemleri belgeliyor:
   koordinatlarında yerleştirildiği için, tasarım çözünürlüğünden farklı bir
   build çözünürlüğünde elemanlar ekran dışına taşıyordu.
 
+- **VFX Graph tarayıcıda çalışmıyor — ve oyunu komple çökertiyordu.**
+  Oyuncunun mermisi bir VFX Graph efektiydi. VFX Graph "compute shader"
+  gerektiriyor, WebGL 2.0'da bu yok; tarayıcı build'i havuzdaki her mermi için
+  `Invalid VFX Particle System` yazıp açılışta `RuntimeError: memory access out
+  of bounds` ile ölüyordu. İlginç ayrıntı: aynı build bir makinede efekti sessizce
+  atlayıp sorunsuz çalışıyor, diğerinde çöküyordu — davranış ekran kartına bağlı
+  olduğu için ilk bakışta "bende olmuyor" gibi görünüyordu. Her platformda
+  çizilen additive bir mesh ile değiştirildi.
+
+- **Tarayıcıda sesler geç geliyordu.** Tüm ses dosyalarında *Preload Audio Data*
+  kapalıydı; yani her klip ilk çalındığı anda çözülüyordu. Yerel diskte fark
+  edilmiyor, tarayıcıda gecikme olarak duyuluyor, üstelik savaşın ortasında
+  yapıldığı için takılmaya da sebep oluyordu. Önceden yükleme, bu işi Loading
+  ekranına taşıyor.
+
+- **Düşman vuruşları savuruştan bir saniye sonra iniyordu.** Saldırı animasyonu
+  düşman menzile girer girmez başlıyor, ama hasar ve vuruş sesi `AttackCooldown`
+  sayacının dolmasını bekliyordu — ilk savuruş sessiz ve hasarsız kalıyor,
+  sonraki vuruşlarda da ses temas anında değil savuruşun *başında* çalıyordu.
+  Artık hasar ve ses animasyonun temas anına zamanlanıyor; oyuncu savuruş
+  sırasında menzilden kaçabildiyse vuruş boşa gidiyor.
+
+- **NavMesh'in yeniden hesaplanması tarayıcıyı donduruyordu.** Her chunk
+  yüklenmesi/kaldırılması NavMesh'i kirli işaretliyor, bu da 300×300 m'lik bir
+  alanın 0.17 m çözünürlükte (yaklaşık 3.2 milyon hücre) baştan hesaplanmasını
+  tetikliyordu. WebGL build'lerinde iş parçacığı desteği olmadığı için bu hesap
+  ana döngüde yapılıyor ve oyuncu her yeni araziye geçtiğinde kare donuyordu.
+  Alanı 160×160 m'ye (düşmanlar en fazla ~46 m uzakta doğuyor), hücre boyutunu
+  0.3 m'ye çekmek yükü ~11 kat azalttı.
+
+- **Build 60 MB sıkıştırılmamış olarak dağıtılıyordu.** Compression "Disabled"
+  ayarlıydı; Gzip'e geçmek — itch.io uygun `Content-Encoding` başlığını
+  göndermediği için Decompression Fallback ile birlikte — indirmeyi ~33 MB'a
+  düşürdü. WebGL başlangıç belleği de varsayılan 32 MB'dan yükseltildi.
+
 ---
 
 ## Derleme (WebGL)

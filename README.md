@@ -338,6 +338,40 @@ This section documents the bugs that were genuinely hard to diagnose:
   ("Constant Pixel Size"), elements spilled off-screen whenever the build
   resolution differed from the resolution the layout was designed against.
 
+- **VFX Graph doesn't run in WebGL — and took the whole game down with it.**
+  The player's projectile was a VFX Graph effect. VFX Graph needs compute
+  shaders, which WebGL 2.0 does not have, so the browser build logged
+  `Invalid VFX Particle System` once per pooled projectile and then died at
+  startup with `RuntimeError: memory access out of bounds`. Telling detail: on
+  one machine the same build merely skipped the effect and ran fine, on another
+  it crashed — GPU-dependent behaviour, which made it look unreproducible at
+  first. Replaced with an additive unlit mesh that renders on every platform.
+
+- **Sounds arrived late in the browser.** Every audio clip had *Preload Audio
+  Data* disabled, so a clip was decoded the first time it played. On a local
+  disk that is invisible; in a browser the decode is noticeable, and doing it
+  mid-combat also caused hitches. Preloading moves the work to the loading
+  screen.
+
+- **Enemy hits landed a second after the swing.** The attack animation started
+  the instant an enemy entered range, but damage and the hit sound waited for a
+  full `AttackCooldown` countdown — so the first swing was silent and harmless,
+  and later hits fired at the *start* of a swing rather than on contact. Damage
+  and sound are now scheduled at the animation's impact moment, and the hit is
+  skipped entirely if the player escaped the range during the wind-up.
+
+- **Rebaking the NavMesh froze the browser.** Every chunk load or unload marked
+  the NavMesh dirty, triggering a full rebake of a 300×300 m volume at 0.17 m
+  resolution — roughly 3.2 million voxels. WebGL builds have no worker threads,
+  so that ran on the main thread and stalled the frame every time the player
+  crossed into new terrain. Shrinking the volume to 160×160 m (enemies spawn at
+  most ~46 m away) and coarsening the voxel size to 0.3 m cut the work ~11×.
+
+- **The build shipped 60 MB uncompressed.** Compression was set to Disabled;
+  switching to Gzip — with Decompression Fallback, which itch.io needs since it
+  does not send the matching `Content-Encoding` header — brought the download to
+  ~33 MB. WebGL initial memory was also raised from its 32 MB default.
+
 ---
 
 ## Building (WebGL)

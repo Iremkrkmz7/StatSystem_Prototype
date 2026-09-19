@@ -96,7 +96,11 @@ public class EnemyAI : MonoBehaviour, IPoolable
         // Agent, player'in fiziksel collider'ina gomulmeye calismasin diye
         // AttackRange'in biraz icinde dursun.
         _agent.stoppingDistance = data.AttackRange * 0.8f;
-        _attackTimer = data.AttackCooldown;
+        // Menzile girer girmez vursun: "isAttacking" true olunca savurma
+        // animasyonu ZATEN hemen basliyor - sayac tam AttackCooldown'dan
+        // baslarsa o ilk savurus hasarsiz/sessiz kaliyor, hasar+ses ancak
+        // ~1.2sn sonra geliyordu ("vurduktan 1sn sonra ses geliyor").
+        _attackTimer = 0f;
 
         // Her dusmanin avoidancePriority'si farkli olsun - HEPSI ayni (50)
         // olunca Unity kalabalik simulasyonunda birbirlerine yol vermiyor,
@@ -240,19 +244,37 @@ public class EnemyAI : MonoBehaviour, IPoolable
 
     void MeleeAttack()
     {
-        _target?.GetComponent<SCharacterStats>()?.TakeDamage(data.ScaleDamage(_wave));
-
-        // Arka plandaki ambiyans/muzik sesini KESMEDEN (Stop() cagrilmiyor) -
-        // PlayClipAtPoint kendi gecici ses kaynagini kullanir, digerlerine dokunmaz.
-        if (_target != null)
-            Sfx.PlayAt(data.MeleeHitSound, _target.position);
-
         // "isAttacking" bir BOOL - oyuncu menzilde kaldigi surece surekli true
         // gonderildigi icin Mecanim sadece ILK gecistte (false->true) animasyonu
         // oynatiyor, sonraki vuruslar da bool zaten true oldugundan animasyon
         // hic yeniden baslamiyordu (vurus sadece bir kere gorunuyordu). Her
         // vurusta "Attack" state'ini basindan zorla yeniden baslatiyoruz.
         _animator?.Play("Attack", 0, 0f);
+
+        // Hasar + ses savurusun BASINDA degil, silahin hedefe degdigi anda.
+        // Eskiden animasyonu yeniden baslattigimiz AYNI karede uygulaniyordu -
+        // ses savurusla uyusmuyordu.
+        StartCoroutine(ApplyMeleeHit(data.AttackImpactDelay));
+    }
+
+    IEnumerator ApplyMeleeHit(float delay)
+    {
+        if (delay > 0f) yield return new WaitForSeconds(delay);
+
+        // Savurus sirasinda olduysek ya da hedef kaybolduysa vurus bosa gider.
+        if (_state == State.Dead || _target == null) yield break;
+
+        // Oyuncu savurus sirasinda menzilden kacabildiyse hasar ALMAZ - aksi
+        // halde gecikmeli vurus, uzaklasmis oyuncuya "uzaktan" isabet ediyordu.
+        // Update'teki menzil kontroluyle ayni (yatay) mesafe; kucuk bir pay var.
+        Vector3 d = _target.position - transform.position;
+        d.y = 0f;
+        if (d.magnitude > data.AttackRange + 0.75f) yield break;
+
+        _target.GetComponent<SCharacterStats>()?.TakeDamage(data.ScaleDamage(_wave));
+        // Arka plandaki ambiyans/muzik sesini KESMEDEN (Stop() cagrilmiyor) -
+        // PlayClipAtPoint kendi gecici ses kaynagini kullanir, digerlerine dokunmaz.
+        Sfx.PlayAt(data.MeleeHitSound, _target.position);
     }
     void FaceTarget()
     {
@@ -420,7 +442,7 @@ public class EnemyAI : MonoBehaviour, IPoolable
     public void OnSpawnFromPool()
     {
         _state = State.Chase;
-        _attackTimer = data?.AttackCooldown ?? 1f;
+        _attackTimer = 0f;
         _facingYaw = transform.eulerAngles.y;
         _stats?.Revive();
         if (headTransform != null) headTransform.gameObject.SetActive(true); // onceki olumden kalma gizli kafayi geri ac
