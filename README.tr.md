@@ -411,13 +411,45 @@ problemleri belgeliyor:
 
 ---
 
-## Derleme (WebGL)
+## Tarayıcı için derleme
 
-- Hedef çözünürlük **1920×1080**
-- **Decompression Fallback** açık (sunucu doğru header göndermediğinde
-  tarayıcı tarafında açılabilmesi için)
-- WebGL içeriği `file://` üzerinden çalışmaz; yerel bir HTTP sunucusu ya da
-  gerçek bir barındırma (itch.io) gerekir
+### Projedeki ayarlar ve gerekçeleri
+
+| Ayar | Değer | Sebep |
+|---|---|---|
+| Canvas boyutu | 1920×1080 | Arayüz mutlak piksel koordinatlarıyla yerleştirildiği için build çözünürlüğü, tasarımın yapıldığı çözünürlükle aynı olmak zorunda — aksi halde elemanlar ekran dışına kayıyor |
+| Sıkıştırma | Gzip + **Decompression Fallback** | itch.io uygun `Content-Encoding` başlığını göndermediği için açma işini JavaScript tarafı üstleniyor. İndirmeyi 60 MB'dan ~33 MB'a düşürdü |
+| Başlangıç belleği | 512 MB | Varsayılan 32 MB + kademeli büyüme yetmiyordu; build açılış sırasında çöküyordu |
+| Kalite seviyesi | Balanced, gölge mesafesi **12** | Gerçek zamanlı gölgeler tarayıcıdaki en pahalı işlerden biri; tepeden bakan kamera zaten yaklaşık 12 m'lik bir alan gösteriyor, ötesindeki gölgeler hesaplanıp hiç görünmüyordu |
+| Data caching | Açık | İkinci ziyarette dosyalar tekrar indirilmiyor, tarayıcı önbelleğinden geliyor |
+
+### Ayar yapmadan önce ölçmek
+
+Player Settings → WebGL → Publishing Settings → **Show Diagnostics**, build'in
+içine FPS / bellek / çizim sayısı gösteren bir panel ekler. Ayar yaparken aç,
+yayına almadan önce kapat. Ölçmeye değer: "yavaş hissettiriyor" iki farklı
+problemin belirtisi olabilir ve çözümleri farklıdır.
+
+- **Sürekli düşük FPS** — her karede ödenen maliyet. Etkisi büyükten küçüğe
+  kollar: kalite seviyesi → Performant (gölgeler tamamen kapanır),
+  `renderDistance` 2 → 1 (25 chunk yerine 9), canvas çözünürlüğünü düşürmek
+  (ama yukarıdaki arayüz uyarısına dikkat).
+- **FPS iyi ama ara ara takılıyor** — iş yükünün patladığı anlar. Olağan
+  şüpheliler: yeni chunk gelince NavMesh'in yeniden hesaplanması, bir chunk'ın
+  proplarının tek karede oluşturulması, bir efektin ilk kez görünmesiyle
+  shader'ın o an derlenmesi.
+
+### Tarayıcının yapamadıkları
+
+Tasarım kararı vermeden önce bilinmesi iyi — her biri bu projede birer hata
+ayıklama seansına mal oldu:
+
+- **VFX Graph** — compute shader gerektiriyor, WebGL 2.0'da yok
+- **VideoPlayer** — WebGL build'lerinde hiç desteklenmiyor
+- **İş parçacıkları (threads)** — kapalı; yani "asenkron" olan işler (çalışma
+  zamanı NavMesh hesabı gibi) yine ana döngüde çalışıp kareyi dondurur
+- **`file://`** — build doğrudan diskten açılamaz; yerel bir HTTP sunucusu
+  (`python -m http.server`) ya da gerçek barındırma gerekir
 
 ---
 
