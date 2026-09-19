@@ -406,13 +406,43 @@ This section documents the bugs that were genuinely hard to diagnose:
 
 ---
 
-## Building (WebGL)
+## Building for the browser
 
-- Target resolution **1920×1080**
-- **Decompression Fallback** enabled (so the browser can decompress when the
-  server doesn't send the right headers)
-- WebGL content cannot run over `file://`; it needs a local HTTP server or real
-  hosting (itch.io)
+### Settings this project ships with, and why
+
+| Setting | Value | Reason |
+|---|---|---|
+| Canvas size | 1920×1080 | The UI is positioned in absolute pixels, so the build resolution has to match the resolution the layout was designed against — otherwise elements slide off-screen |
+| Compression | Gzip + **Decompression Fallback** | itch.io does not send a matching `Content-Encoding` header, so the loader decompresses in JavaScript instead. Took the download from 60 MB to ~33 MB |
+| Initial memory | 512 MB | The 32 MB default with geometric growth was not enough; the build died during startup |
+| Quality level | Balanced, shadow distance **12** | Real-time shadows are among the most expensive things in WebGL, and the top-down camera only ever shows about 12 m of ground — shadows further out were being computed and never seen |
+| Data caching | On | The second visit loads from the browser's cache instead of downloading again |
+
+### Measuring before tuning
+
+Player Settings → WebGL → Publishing Settings → **Show Diagnostics** adds an
+overlay with FPS, memory use and draw calls to the build itself. Turn it on
+while tuning, off before release. It is worth doing: "it feels slow" can mean
+two different problems with two different fixes.
+
+- **Steady low FPS** — per-frame cost. Levers, in rough order of impact:
+  quality level → Performant (drops shadows entirely), `renderDistance` 2 → 1
+  (9 chunks instead of 25), lower canvas resolution (but see the UI caveat above).
+- **Good FPS with periodic hitches** — work spikes. Usual suspects here:
+  the NavMesh rebake when new chunks stream in, instantiating a chunk's props
+  in one frame, and shaders compiling the first time an effect appears.
+
+### What the browser simply cannot do
+
+Worth knowing before designing around it — each of these cost a debugging
+session in this project:
+
+- **VFX Graph** — needs compute shaders, which WebGL 2.0 does not have
+- **VideoPlayer** — not supported in WebGL builds at all
+- **Worker threads** — disabled, so anything "async" (the runtime NavMesh bake,
+  for instance) still runs on the main thread and stalls the frame
+- **`file://`** — a build cannot be opened straight off disk; it needs a local
+  HTTP server (`python -m http.server`) or real hosting
 
 ---
 
