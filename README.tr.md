@@ -370,6 +370,40 @@ problemleri belgeliyor:
   Alanı 160×160 m'ye (düşmanlar en fazla ~46 m uzakta doğuyor), hücre boyutunu
   0.3 m'ye çekmek yükü ~11 kat azalttı.
 
+- **Düşmanlar, kendilerini örten ekranların arkasından saldırıyordu.** Giriş
+  sinematiği ve ömür boyu bir kez gösterilen "nasıl oynanır" paneli kendi
+  süreleriyle çalışıyor, spawner ise başlangıç gecikmesini bunlardan bağımsız
+  sayıyordu — üstelik oyuncu Start'a bastığı andan itibaren. İkisi hiç
+  uyuşmadığı için panel kapandığında ilk dalga çoktan doğmuş ve mesafeyi
+  kapatmış oluyordu; oyuncu görmeye başladığı anda hasar yiyordu. Spawn sayacı
+  artık kontrolün gerçekten oyuncuya geçmesini *ve* panelin kapanmasını
+  bekliyor; bir zaman aşımıyla da düşmanların hiç doğmama ihtimali kapatıldı.
+
+- **Sinematik sırasında ateş edilebiliyor, duraklatılmış oyunda nişan
+  alınabiliyordu.** Hareket ile ateş etme iki ayrı bileşende olduğu için,
+  sinematikte kontrolcüyü kapatmak ateş etmeyi kapatmıyordu. Duraklatmada ise
+  aynı boşluğun daha ince bir hâli vardı: hareket `Time.deltaTime` ile
+  çarpıldığından `timeScale = 0`'da kendiliğinden duruyor, ama nişan alma
+  `transform.rotation`'ı doğrudan atadığı için karakter duran oyunda imlece
+  dönmeye devam ediyordu.
+
+- **Sahne yeniden yüklenince hayalet düşmanlar kalıyordu.** Nesne havuzu
+  yeniden başlatmayı atlatabilmek için `DontDestroyOnLoad` işaretli — bu da
+  sahne yeniden yüklendiğinde hâlâ hayatta olan düşmanların hiç yok edilmemesi
+  demek. Yeni doğuş noktasının hemen yanında, oyuncunun dibinde beliriyorlardı.
+  Artık her yeni oyun, önceki turdan kalan tüm `EnemyAI`'ları zorla havuza
+  gönderiyor.
+
+- **Tek bir kare ham 3B sahneyi gösteriyordu.** Loading ekranı, Start Menu
+  açılmadan önce kendini kapatıyordu; yani bir kare boyunca kamerayı örten
+  hiçbir arayüz olmuyor ve oyun dünyası bir an görünüp kayboluyordu. Sırayı
+  değiştirmek — önce menüyü aç, sonra loading'i kapat — boşluğu kapatıyor.
+
+- **İyileşme sayısı can doluyken yalan söylüyordu.** İyileşme maksimum cana
+  göre sınırlanıyor ama uçan yazı istenen miktarı basıyordu; can doluyken
+  alınan bir şifa yine `+30` diyordu. Artık gerçekten iyileşen miktarı, hiç
+  iyileşme olmadıysa `FULL HP` yazıyor.
+
 - **Build 60 MB sıkıştırılmamış olarak dağıtılıyordu.** Compression "Disabled"
   ayarlıydı; Gzip'e geçmek — itch.io uygun `Content-Encoding` başlığını
   göndermediği için Decompression Fallback ile birlikte — indirmeyi ~33 MB'a

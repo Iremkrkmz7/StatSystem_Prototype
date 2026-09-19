@@ -367,6 +367,38 @@ This section documents the bugs that were genuinely hard to diagnose:
   crossed into new terrain. Shrinking the volume to 160×160 m (enemies spawn at
   most ~46 m away) and coarsening the voxel size to 0.3 m cut the work ~11×.
 
+- **Enemies attacked from behind the screens that were covering them.** The
+  intro cinematic and the one-time how-to-play panel run on their own timers,
+  while the spawner counted down its startup delay independently — starting the
+  moment the player pressed Start. The two never agreed, so by the time the
+  panel faded the first wave had already spawned and closed the distance, and
+  the player took damage the instant they could see again. The spawn countdown
+  now waits for control to actually reach the player *and* for the panel to
+  close, with a timeout so enemies can never fail to spawn at all.
+
+- **The player could shoot during a cutscene, and aim while paused.** Movement
+  and shooting live on two different components, so disabling the controller for
+  the cinematic left firing enabled. Pausing had a subtler version of the same
+  gap: movement stops on its own at `timeScale = 0` because it is multiplied by
+  `Time.deltaTime`, but aiming assigns `transform.rotation` directly, so the
+  character kept turning toward the cursor in a paused game.
+
+- **Zombie enemies survived scene reloads.** The object pool is marked
+  `DontDestroyOnLoad` so it outlives a restart — which also means enemies that
+  were still alive when the scene reloaded were never destroyed. They reappeared
+  next to the fresh spawn point, already adjacent to the player. Every new run
+  now force-despawns any `EnemyAI` left over from the previous one.
+
+- **A single frame exposed the raw 3D scene.** The loading screen hid itself
+  before the start menu was shown, so for one frame no UI covered the camera and
+  the untouched game world flashed on screen. Swapping the order — show the menu
+  first, then hide the loading panel — closes the gap.
+
+- **The heal number lied at full health.** Healing clamps to max health, but the
+  floating text printed the requested amount, so a pickup at full health still
+  announced `+30`. It now prints the amount actually restored, or `FULL HP` when
+  nothing was.
+
 - **The build shipped 60 MB uncompressed.** Compression was set to Disabled;
   switching to Gzip — with Decompression Fallback, which itch.io needs since it
   does not send the matching `Content-Encoding` header — brought the download to
