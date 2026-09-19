@@ -11,7 +11,7 @@ yerden devam eder.
 
 **Unity 2022.3 · URP · C#**
 
-**▶ Oynanabilir sürüm:** *(https://7iremkrkmz.itch.io/magic-survival)*
+**▶ Tarayıcıda oyna: [Magic Survival — itch.io](https://7iremkrkmz.itch.io/magic-survival)**
 
 ---
 
